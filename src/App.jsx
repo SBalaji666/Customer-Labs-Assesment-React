@@ -64,11 +64,13 @@ const App = () => {
   const onFinish = async (values) => {
     const { segment_name, ...dynamicFields } = values;
 
-    const schema = Object.fromEntries(
-      Object.entries(dynamicFields).map(([key, value]) => [value, key])
-    );
+    const schema = Object.entries(dynamicFields).map(([key, value]) => {
+      return { [value]: key };
+    });
 
-    const url = 'https://webhook.site/b9ff6bab-04b3-4a04-8e7a-c187f59d8bd9'
+
+    // Added Mock url so cause of facing an CORS proxy error in live 
+    const url = 'https://segments.free.beeceptor.com'
 
     // I've used this CORS proxy it works in development
     // const corsProxy = 'https://cors-anywhere.herokuapp.com/';
@@ -87,7 +89,7 @@ const App = () => {
         schema
       });
 
-      message.success("Segment Saved Sucessfully");
+      message.success("Segment has been saved sucessfully");
 
       console.log('Response data:', response.data);
     } catch (error) {
