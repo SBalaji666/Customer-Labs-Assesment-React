@@ -23,6 +23,24 @@ body {
   border-radius: 2px;
 }
 
+.add_schema_button {
+  background: none;
+  border: none;
+  color: gray;
+  outline: none;
+  padding: 0;
+  text-decoration: underline;
+}
+.segment_actions {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  border-top: 1px solid #e8e8e8;
+  padding: 10px 16px;
+  background: #fff;
+}
+
 .ant-form-item:last-child {
   margin-bottom:  0px;
 }
