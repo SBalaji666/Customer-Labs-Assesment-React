@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
-import { PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined, LeftOutlined } from "@ant-design/icons";
 import {
   Button,
-  Col,
   Drawer,
   Form,
   Input,
-  Row,
   Select,
   Space,
+  message
 } from "antd";
 import axios from "axios";
 
@@ -28,6 +27,7 @@ const App = () => {
   const [open, setOpen] = useState(false);
   const [schemaType, setSchemaType] = useState(null);
   const [query, setQuery] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -48,7 +48,7 @@ const App = () => {
     const isAlreadyInQuery = query.find((item) => item.value === schemaType);
 
     if (isAlreadyInQuery) {
-      alert("Schema type is already in the query");
+      message.error("Schema type is already added to the query");
       return;
     }
 
@@ -62,30 +62,42 @@ const App = () => {
   };
 
   const onFinish = async (values) => {
-    const { segment_name, ...dynamicFields } = values
+    const { segment_name, ...dynamicFields } = values;
 
     const schema = Object.fromEntries(
       Object.entries(dynamicFields).map(([key, value]) => [value, key])
     );
 
-    const url = 'https://webhook.site/b9ff6bab-04b3-4a04-8e7a-c187f59d8bd9';
+    const url = 'https://webhook.site/b9ff6bab-04b3-4a04-8e7a-c187f59d8bd9'
 
-    const data = {
-      segment_name,
-      schema
+    // I've used this CORS proxy it works in development
+    // const corsProxy = 'https://cors-anywhere.herokuapp.com/';
+    // const url = corsProxy + 'https://webhook.site/b9ff6bab-04b3-4a04-8e7a-c187f59d8bd9'
+
+    if (query.length === 0) {
+      message.error("Atleast add one query to the schema to save the segment");
+      return;
     }
 
-    const headers = {
-      'Content-Type': 'application/json',
-    };
+    setLoading(true);
 
     try {
-      const response = await axios.post(url, data, { headers: headers });
+      const response = await axios.post(url, {
+        segment_name,
+        schema
+      });
 
-      console.log('Response status:', response.status);
+      message.success("Segment Saved Sucessfully");
+
       console.log('Response data:', response.data);
     } catch (error) {
+      message.error(`Error making POST request: ${error.message}`);
       console.error('Error making POST request:', error.message);
+    } finally {
+      setQuery([])
+      setSchemaType(null);
+      form.resetFields();
+      setLoading(false);
     }
   };
 
@@ -100,14 +112,15 @@ const App = () => {
 
   return (
     <>
-      <Button type="primary" onClick={showDrawer} icon={<PlusOutlined />}>
-        Save Segment
+      <Button type="primary" onClick={showDrawer}>
+        Save segment
       </Button>
 
       <Drawer
         title="Saving Segment"
-        width={400}
+        width={450}
         onClose={onClose}
+        closeIcon={<LeftOutlined />}
         open={open}
         styles={{
           body: {
@@ -133,42 +146,50 @@ const App = () => {
             To save your segment, you need to add schemas to build the query
           </p>
 
-          {query.map((q, index) => (
-            <Form.Item
-              key={index}
-              name={q.label}
-              rules={[
-                {
-                  required: true,
-                  message: `Please select the ${q.label.toLowerCase()}`,
-                },
-              ]}
-            >
-              <Select
-                onChange={(value) => handleChange(value, index)}
-              >
-                {options
-                  .filter(option =>
-                    !query.some((selected, selectedIndex) =>
-                      selected.value === option.value && selectedIndex !== index
-                    )
-                  )
-                  .map((option) => (
-                    <Option key={option.value} value={option.value}>
-                      {option.label}
-                    </Option>
-                  ))}
-              </Select>
-            </Form.Item>
-          ))}
+          {query.length > 0 ? (
+            <div className="dynamic_field_wrapper">
+              {query.map((q, index) => (
+                <Form.Item
+                  key={index}
+                  name={q.label}
+                  rules={[
+                    {
+                      required: true,
+                      message: `Please select the ${q.label.toLowerCase()}`,
+                    },
+                  ]}
+                >
+                  <Select onChange={(value) => handleChange(value, index)}>
+                    {options
+                      .filter(
+                        (option) =>
+                          !query.some(
+                            (selected, selectedIndex) =>
+                              selected.value === option.value &&
+                              selectedIndex !== index
+                          )
+                      )
+                      .map((option) => (
+                        <Option key={option.value} value={option.value}>
+                          {option.label}
+                        </Option>
+                      ))}
+                  </Select>
+                </Form.Item>
+              ))}
+            </div>
+          ) : (
+            ""
+          )}
 
           <Select
             style={{ width: "100%", marginBottom: 16 }}
             placeholder="Add schema to segment"
             value={schemaType}
             onChange={(value) => setSchemaType(value)}
-            options={options.filter(option =>
-              !query.some(selected => selected.value === option.value)
+            options={options.filter(
+              (option) =>
+                !query.some((selected) => selected.value === option.value)
             )}
           />
 
@@ -178,13 +199,12 @@ const App = () => {
             style={{
               background: "none",
               border: "none",
+              color: "gray",
               outline: "none",
               padding: 0,
               textDecoration: "underline",
             }}
-            icon={
-              <PlusOutlined />
-            }
+            icon={<PlusOutlined />}
           >
             Add New Schema
           </Button>
@@ -201,7 +221,7 @@ const App = () => {
             }}
           >
             <Space>
-              <Button htmlType="submit" type="primary">
+              <Button htmlType="submit" type="primary" style={{ backgroundColor: "gray" }}>
                 Save the Segment
               </Button>
               <Button onClick={onClose}>Cancel</Button>
